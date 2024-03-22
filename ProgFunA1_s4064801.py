@@ -69,16 +69,22 @@ def update_customer(customer_name, earned_reward_points):
         customers[customer_name] = earned_reward_points;
 
 
+# Main program. It handles the logic
 def main():
-    # Main program. It handles the logic
+    # Read inputs
     customer_name = read_customer_name();
     product_name = read_product_name();
     product_quantity = read_product_quantity();
 
+    # Do calculation
     total_price = calculate_total_price(products[product_name], product_quantity);
     earned_reward_points = calculate_reward_points(total_price);
 
+    # Print receipt
     display_receipt(customer_name, product_name, product_quantity, total_price, earned_reward_points);
+
+    # Update customer details and print
+    update_customer(customer_name, earned_reward_points);
     display_message(f"Customer list: {customers}");
 
 # Starting point of the program
