@@ -70,7 +70,7 @@ def update_customer(customer_name, earned_reward_points):
 
 
 def main():
-    # Main program
+    # Main program. It handles the logic
     customer_name = read_customer_name();
     product_name = read_product_name();
     product_quantity = read_product_quantity();
