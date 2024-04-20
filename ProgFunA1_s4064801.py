@@ -43,6 +43,8 @@ def read_customer_name_and_validate():
         # Check is customer name contains only alphebetic characters
         # Python string isalpha() method. Available at: https://www.w3schools.com/python/ref_string_isalpha.asp (Accessed: 22 March 2024). 
         if (customer_name.isalpha()):
+            # Update customer details.
+            update_customer(customer_name, 0);
             # Return the customer name
             return customer_name;
         else:
@@ -52,19 +54,25 @@ def read_customer_name_and_validate():
 def read_product_name_and_validate():
     while True:
         # Display message asking for product's name
-        display_message("Enter the Product's name: ");
+        display_message("Enter the list of Product's name seperated by commas: ");
         # Read product name
-        product_name = sys.stdin.readline().strip();
-        if product_name in products:
-            # Return the product name
-            return product_name;
-        else:
-            # Display error message
-            display_message("\nError: Enterd product is invalid.\n\n");
+        product_name_list = [product_name.strip() for product_name in sys.stdin.readline().split(',')];
+        for product_name in product_name_list:
+            if product_name not in products:
+                # Display error message
+                display_message("\nError: Enterd product is invalid.\n\n");
+                break;
+        # Return the product name
+        return product_name_list;
 
-def check_is_prescription_needed(product_name):
-    # Return prescription is needed or not
-    return products[product_name]["prescription"] == 'y';
+def check_is_prescription_needed(product_name_list):
+    for product_name in product_name_list:
+        # Check prescription is needed or not each product
+        if(products[product_name]["prescription"] == 'y'):
+            # Return true if any product needs a prescription
+            return True;
+    # Return false if any product do not needs a prescription
+    return False;
 
 def is_prescription_available():
     # Display message asking prescription
@@ -73,74 +81,121 @@ def is_prescription_available():
         # Read answer
         answer = sys.stdin.readline().strip();
         if answer.lower() == 'y':
-            return True
+            return True;
         elif answer.lower() == 'n':
             display_message("This product requires a doctor's prescription. Purchase cannot be completed.");
-            return False
+            return False;
         else:
             display_message("\nError: Invalid character Enter (y - Yes, n - No)");
 
-def read_product_quantity_and_validate():
+def read_product_quantity_and_validate(product_name_list):
+    quantity_list = [];
     while True:
         # Display message asking for product's quantity
-        display_message("Enter the Product's quantity: ");
-        quantity = sys.stdin.readline().strip();
-        display_message(f"-{quantity}-{quantity.isnumeric()}-{int(quantity) > 0}-{quantity.isnumeric() and int(quantity) > 0}");
+        display_message("Enter the list of Product's quantity seperated by commas: ");
+        quantity_list = [quantity.strip() for quantity in sys.stdin.readline().split(',')];
+
+        # Validate number of products and number of quantities
+        if (len(product_name_list) != len(quantity_list)):
+            display_message("\nError: Number of products and quantities should be the same.\n\n");
+        else:
+            break;
+    product_list = [];
+    for index, quantity in enumerate(quantity_list):
         if (quantity.isnumeric() and int(quantity) > 0):
-            # Return the product quantity
-            return int(quantity);
+            # Set product details and push to product list
+            product = {
+                'name': product_name_list[index],
+                'quantity': int(quantity)
+            }
+            product_list.append(product);
         else:
             # Display error message
             display_message("\nError: Quantity should contain only positive Integer values.\n\n");
+            break;
+    # Return product list
+    return product_list;
 
-def calculate_total_price(unitPrice, quantity):
+def calculate_total_price(product_list):
     # Calculate the total price and return it
-    return unitPrice * quantity;
+    total_price = 0;
+    for product in product_list:
+        total_price += products[product['name']]['unit_price'] * product['quantity'];
+    return total_price;
 
-def calculate_reward_points(totalPrice):
+def calculate_reward_points(total_price):
     # Round points to the nearest integer and return it
-    return round(totalPrice);
+    return round(total_price);
 
-def display_receipt(customer_name, product_name, product_quantity, total_price, reward_points):
+def display_receipt(customer_name, product_list, total_price, reward_points, discount_details):
     # Creating a multiline string with formatted expressions
     receipt = f"""
 -------------------------------------------------
                     Receipt 
 -------------------------------------------------
-Name:                       {customer_name}
-Product:                    {product_name}
-Unit Price:                 {products[product_name]["unit_price"]:.2f} (AUD)
-Quantity:                   {product_quantity}
+Name:                         {customer_name}""";
+    for product in product_list:
+        receipt += f"""
+Product:                      {product['name']}
+Unit Price:                   {products[product['name']]['unit_price']} (AUD)
+Quantity:                     {product['quantity']}""";
+
+    receipt += f"""
 -------------------------------------------------
-Total cost:                 {total_price:.2f} (AUD)
-Earned reward:              {reward_points}
--------------------------------------------------
-    """;
+Total cost:                   {total_price} (AUD)
+Earned reward:                {reward_points}
+-------------------------------------------------""";
+    
+    if (discount_details["is_eligible"]):
+        receipt += f"""
+Discount amount:              {discount_details["discount_amount"]} (AUD)
+Total after discount:         {discount_details["total_after_discount"]}  (AUD)
+-------------------------------------------------""";
+
     # Display the receipt
     display_message(receipt);
 
-def update_customer(customer_name, earned_reward_points):
+def update_customer(customer_name, reward_points):
     if customer_name in customers:
-        customers[customer_name] += earned_reward_points;
+        # For an existing customer reward points added to the existing ones
+        customers[customer_name] += reward_points;
     else:
-        customers[customer_name] = earned_reward_points;
+        # For a new customer rewars points set as his reward points
+        customers[customer_name] = reward_points;
+
+def calculate_reward_discounts(total_price, total_rewards):
+    discount_details = {
+        "is_eligible": False,
+        "discount_amount": 0,
+        "used_rewards": 0,
+        "total_after_discount": total_price
+    }
+    if (total_price >= 10 and total_rewards >= 100):
+        discount_details["is_eligible"] = True;
+        discount_details["discount_amount"] = min(round(total_price - 5, -1), round(total_rewards - 50, -2) / 10);
+        discount_details["used_rewards"] = discount_details["discount_amount"] * 10
+        discount_details["total_after_discount"] -= discount_details["discount_amount"];
+    return discount_details;
 
 
 # Handles the make a purchase logic
 def make_purchase():
     # Read inputs
     customer_name = read_customer_name_and_validate();
-    product_name = read_product_name_and_validate();
-    if (check_is_prescription_needed(product_name) and (not is_prescription_available())):
+    product_name_list = read_product_name_and_validate();
+    if (check_is_prescription_needed(product_name_list) and (not is_prescription_available())):
         return;
-    product_quantity = read_product_quantity_and_validate();
+    product_list = read_product_quantity_and_validate(product_name_list);
     # Do calculation
-    total_price = calculate_total_price(products[product_name]["unit_price"], product_quantity);
+    total_price = calculate_total_price(product_list);
     earned_reward_points = calculate_reward_points(total_price);
+    discount_details = calculate_reward_discounts(total_price, customers[customer_name]);
     # Print receipt
-    display_receipt(customer_name, product_name, product_quantity, total_price, earned_reward_points);
-    # Update customer details and print
+    display_receipt(customer_name, product_list, total_price, earned_reward_points, discount_details);
+    # Update customer details with earned rewards
     update_customer(customer_name, earned_reward_points);
+    # Update customer details with used rewards
+    update_customer(customer_name, -discount_details["used_rewards"]);
 
 def add_or_update_product():
     # Add or update product information
@@ -178,7 +233,7 @@ def display_products():
 def main_menu():
     # Display main menu. After completing each selected option user will automatically directed to main menu until the user exit from the system
     while True:
-        display_message("""
+        display_message("""\n\n
 Menu:
 1. Make a purchase
 2. Add/update information of a product
