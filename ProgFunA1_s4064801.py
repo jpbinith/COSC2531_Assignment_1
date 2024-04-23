@@ -1,3 +1,9 @@
+# 1. Name - Jayaweera Patabandige Binith Achintha Jayasinghe, Student Id - s4064801
+# 2. Highest part attempted - Part 3 (All questions completed)
+# 3. I validated the doctor's prescription is needed or not after submitting the quentities as it is not specified where the validation need to be implemented. I done it this way because I think it is good for the user experiences.
+# 3. There is a minor issue with the product name being case-sensitive. If the product name is not entered with the proper upper and lowercase letters, an error message is displayed.
+
+# Additional details
 # python version Python 3.8.18
 # Git hub repository https://github.com/jpbinith/COSC2531_Assignment_1
 
